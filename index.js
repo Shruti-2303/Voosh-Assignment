@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const connection = require("./config/database");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -10,6 +11,7 @@ const swaggerDocs = require("./config/swagger");
 
 const app = express();
 
+app.use(cors());
 //Database connection
 connection();
 

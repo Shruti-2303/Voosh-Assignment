@@ -116,6 +116,8 @@
  *         description: ID of the user profile to retrieve
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User profile retrieved successfully
@@ -154,6 +156,11 @@
  *                   type: string
  *                   description: Error message
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     UserProfile:
  *       type: object
@@ -198,6 +205,8 @@
  *                 type: string
  *               profileVisibility:
  *                 type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User profile updated successfully
@@ -226,6 +235,11 @@
  *                   type: string
  *                   description: Error message
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     UserProfile:
  *       type: object
@@ -252,7 +266,7 @@
  * /api/users/upload-photo:
  *   post:
  *     summary: Upload user photo
- *     description: Upload a photo for the user.
+ *     description: Upload a photo for the user and save the Cloudinary URL to the user's photo field.
  *     requestBody:
  *       required: true
  *       content:
@@ -263,6 +277,9 @@
  *               photo:
  *                 type: string
  *                 format: binary
+ *                 description: The photo file to upload
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User photo uploaded successfully
@@ -291,6 +308,11 @@
  *                   type: string
  *                   description: Error message
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     UserProfile:
  *       type: object
@@ -312,7 +334,7 @@
  *           description: Visibility settings for the user's profile
  *         photo:
  *           type: string
- *           description: Path to the uploaded photo
+ *           description: URL of the uploaded photo
  */
 
 /**
@@ -321,6 +343,8 @@
  *   get:
  *     summary: List public profiles
  *     description: Retrieve a list of public user profiles.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of public user profiles retrieved successfully
@@ -341,6 +365,11 @@
  *                   type: string
  *                   description: Error message
  * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  *   schemas:
  *     UserProfile:
  *       type: object
@@ -365,7 +394,7 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
-// const role = require("../middleware/role");
+require("dotenv").config();
 const {
   signup,
   login,
@@ -376,13 +405,31 @@ const {
   logoutUser,
 } = require("../controllers/userController");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Set up multer to use Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "uploads",
+    format: async (req, file) => "png", // supports promises as well
+    public_id: (req, file) => Date.now() + "_" + file.originalname,
+  },
+});
+const upload = multer({ storage: storage });
 
 router.post("/signup", signup);
 router.post("/login", login);
 router.get("/profile/:id", auth, getUserProfile);
 router.put("/profile", auth, updateProfile);
-router.post("/profile/photo", auth, upload.single("photo"), uploadPhoto);
+router.post("/profile/photo", auth, upload.single("file"), uploadPhoto);
 router.get("/profiles", listPublicProfiles);
 router.post("/logout", auth, logoutUser);
 module.exports = router;

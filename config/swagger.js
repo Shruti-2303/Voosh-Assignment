@@ -1,5 +1,7 @@
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+require("dotenv").config();
+const port = process.env.PORT || 5000;
 
 const options = {
   definition: {
@@ -13,9 +15,23 @@ const options = {
         email: "sharmas23032001@gmail.com",
       },
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
     servers: [
       {
-        url: "http://localhost:5000",
+        url: `http://localhost:${port}`,
         description: "Development server",
       },
     ],

@@ -1,23 +1,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
-const path = require("path");
+
 require("dotenv").config();
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({ storage });
 
 exports.signup = async (req, res) => {
   const { username, password, email, role } = req.body;
@@ -110,8 +95,11 @@ exports.uploadPhoto = async (req, res) => {
   try {
     let user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Save the Cloudinary URL to the user's photo field
     user.photo = req.file.path;
     await user.save();
+
     res.json(user);
   } catch (err) {
     console.error(err.message);
